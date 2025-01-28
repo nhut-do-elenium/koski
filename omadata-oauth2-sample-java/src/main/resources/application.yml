@@ -15,7 +15,7 @@ spring:
           koski:
             provider: koski-tls
             client-id: omadataoauth2sample
-            client-authentication-method: tls_client_auth
+            client-authentication-method: none
             authorization-grant-type: authorization_code
             #scope: HENKILOTIEDOT_HETU,OPISKELUOIKEUDET_KAIKKI_TIEDOT
             scope: HENKILOTIEDOT_KAIKKI_TIEDOT,OPISKELUOIKEUDET_KAIKKI_TIEDOT
