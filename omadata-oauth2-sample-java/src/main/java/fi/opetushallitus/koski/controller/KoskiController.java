@@ -1,22 +1,24 @@
 package fi.opetushallitus.koski.controller;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.client.RestClient;
 
 @RestController("/")
 public class KoskiController {
 
-    private final WebClient webClient;
+    private final RestClient restClient;
 
     @Value("${koski.resource-server.url}")
     private String resourceServerUrl;
 
-    public KoskiController(WebClient webClient) {
-        this.webClient = webClient;
+    public KoskiController(RestClient restClient) {
+        this.restClient = restClient;
     }
 
     @GetMapping("/")
@@ -50,8 +52,14 @@ public class KoskiController {
     }
 
     @PostMapping("/api/openid-api-test/form-post-response-cb")
-    public String authenticatedPost() {
-        return "/";
+    public ResponseEntity<String> authenticatedPost(@RequestBody(required = false) String body) {
+        // Forward the POST request to the target URL
+        return restClient.post()
+                .uri("http://localhost:7051/login/oauth2/callback/koski")
+                .contentType(MediaType.TEXT_PLAIN) // Use TEXT_PLAIN for raw string
+                .body(body)
+                .retrieve()
+                .toEntity(String.class);
     }
 
     @GetMapping("/error")
