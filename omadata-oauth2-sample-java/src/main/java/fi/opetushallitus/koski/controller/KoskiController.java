@@ -20,6 +20,14 @@ public class KoskiController {
         this.webClient = webClient;
     }
 
+    @GetMapping("/")
+    public String root() {
+        return """
+                You are NOT authenticated.
+                <br/><a href="/oauth2/authorization/koski">Login</a>
+                """;
+    }
+
     @GetMapping("/hello")
     public String hello() {
         return "Hello, You!";
