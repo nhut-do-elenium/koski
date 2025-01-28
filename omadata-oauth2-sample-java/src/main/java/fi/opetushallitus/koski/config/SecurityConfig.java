@@ -28,8 +28,13 @@ public class SecurityConfig {
         responseClient.setRestClient(oauthRestClient);
 
         return http
-                .securityMatcher("/", "/api/openid-api-test/form-post-response-cb")
-                .securityMatcher("/oauth2/**")
+                .csrf().disable()
+                .securityMatcher(
+                        "/",
+                        "/error",
+                        "/api/openid-api-test/form-post-response-cb",
+                        "/oauth2/**",
+                        "/login/**")
                 .oauth2Client(
                         client -> {
                             client.authorizationCodeGrant(
