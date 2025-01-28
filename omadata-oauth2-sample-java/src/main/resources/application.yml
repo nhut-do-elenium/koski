@@ -6,8 +6,10 @@ spring:
       pem:
         koski-ssl-bundle:
           keystore:
-            certificate: "${jod.koski.client-cert:../koski-luovutuspalvelu/proxy/test/testca/certs/root-ca.crt}"
-            private-key: "${jod.koski.client-key:../koski-luovutuspalvelu/proxy/test/testca/private/root-ca.key}"
+            certificate: "${jod.koski.client-cert:../koski-luovutuspalvelu/proxy/test/testca/certs/client.crt}"
+            private-key: "${jod.koski.client-key:../koski-luovutuspalvelu/proxy/test/testca/private/client.key}"
+          truststore:
+            certificate: "${jod.koski.server-cert:../koski-luovutuspalvelu/proxy/test/testca/certs/root-ca.crt}"
   security:
     oauth2:
       client:
@@ -20,21 +22,16 @@ spring:
             #scope: HENKILOTIEDOT_HETU,OPISKELUOIKEUDET_KAIKKI_TIEDOT
             scope: HENKILOTIEDOT_KAIKKI_TIEDOT,OPISKELUOIKEUDET_KAIKKI_TIEDOT
             client-name: koski
-            redirect-uri: "{baseUrl}/api/openid-api-test/form-post-response-cb"
-            #redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            redirect-uri: "{baseUrl}/oauth2/code/{registrationId}"
         provider:
-          koski-tls: # https://testiopintopolku.fi/koski/omadata-oauth2/.well-known/oauth-authorization-server
-            token-uri: http://localhost:7021/koski/omadata-oauth2/token
-            #token-uri: https://testiopintopolku.fi/koski/omadata-oauth2/token
+          koski-tls:
+            token-uri: https://localhost:7022/koski/api/omadata-oauth2/authorization-server
             authorization-uri: http://localhost:7021/koski/omadata-oauth2/authorize
-            #authorization-uri: https://testiopintopolku.fi/koski/omadata-oauth2/authorize
 server:
   port: 7051
-
 koski:
   resource-server:
-    url: http://localhost:7021/koski/api/omadata-oauth2/resource-server
-
+    url: https://localhost:7022/koski/api/omadata-oauth2/resource-server
 logging:
   level:
     org.springframework.security: TRACE
