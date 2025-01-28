@@ -34,3 +34,7 @@ server:
 koski:
   resource-server:
     url: http://localhost:7021/koski/api/omadata-oauth2/resource-server
+
+logging:
+  level:
+    org.springframework.security: TRACE
