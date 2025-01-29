@@ -17,24 +17,20 @@ import org.springframework.web.client.RestClient;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain oauthConfig(
-            HttpSecurity http,
-            ClientRegistrationRepository repository,
-            @Qualifier("koski") RestClient oauthRestClient,
-            HttpSessionOAuth2AuthorizedClientRepository authorizedClientRepository)
-            throws Exception {
+    public SecurityFilterChain oauthConfig(HttpSecurity http, ClientRegistrationRepository repository,
+                                           @Qualifier("koski") RestClient oauthRestClient,
+                                           HttpSessionOAuth2AuthorizedClientRepository authorizedClientRepository) throws Exception {
 
         var responseClient = new RestClientAuthorizationCodeTokenResponseClient();
         responseClient.setRestClient(oauthRestClient);
 
         return http
-                .csrf().disable()
+                .csrf().disable() // Disable CSRF for development purposes only. Don't do this in production!
                 .securityMatcher(
                         "/",
                         "/error",
-                        "/api/openid-api-test/form-post-response-cb",
                         "/oauth2/**",
-                        "/login/**")
+                        "/oauth2/logout/koski")
                 .oauth2Client(
                         client -> {
                             client.authorizationCodeGrant(
