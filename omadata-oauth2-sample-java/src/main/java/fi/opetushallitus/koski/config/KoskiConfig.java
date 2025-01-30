@@ -1,6 +1,5 @@
 package fi.opetushallitus.koski.config;
 
-import lombok.Getter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
@@ -26,7 +25,6 @@ public class KoskiConfig {
     private static final String REGISTRATION_ID = "koski";
     private static final String SSL_BUNDLE = "koski-ssl-bundle";
 
-    @Getter
     private final String resourceServer;
 
     public KoskiConfig(@Value("${koski.resource-server.url}") String resourceServer) {
@@ -58,5 +56,9 @@ public class KoskiConfig {
 
     public String getRegistrationId() {
         return REGISTRATION_ID;
+    }
+
+    public String getResourceServer() {
+        return resourceServer;
     }
 }

@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
@@ -23,9 +24,8 @@ public class SecurityConfig {
                                            @Qualifier(RESTCLIENT_ID) RestClient oauthRestClient,
                                            HttpSessionOAuth2AuthorizedClientRepository authorizedClientRepository
     ) throws Exception {
-
         return http
-                .csrf().disable() // Disable CSRF for development purposes only. Don't do this in production!
+                .csrf(AbstractHttpConfigurer::disable) // Disable CSRF for development purposes only. Don't do this in production!
                 .securityMatcher(
                         "/",
                         "/error",
@@ -37,21 +37,21 @@ public class SecurityConfig {
                         client -> {
                             client.authorizationCodeGrant(
                                     code -> {
-                                        code.authorizationRequestResolver(getKoskiAuthorizationRequestResolver(repository));
-                                        code.accessTokenResponseClient(getRestClientAuthorizationCodeTokenResponseClient(oauthRestClient));
+                                        code.authorizationRequestResolver(createKoskiAuthorizationRequestResolver(repository));
+                                        code.accessTokenResponseClient(createAccessTokenResponseClient(oauthRestClient));
                                     });
                             client.authorizedClientRepository(authorizedClientRepository);
                         })
                 .build();
     }
 
-    private static RestClientAuthorizationCodeTokenResponseClient getRestClientAuthorizationCodeTokenResponseClient(RestClient oauthRestClient) {
+    private static RestClientAuthorizationCodeTokenResponseClient createAccessTokenResponseClient(RestClient oauthRestClient) {
         var responseClient = new RestClientAuthorizationCodeTokenResponseClient();
         responseClient.setRestClient(oauthRestClient);
         return responseClient;
     }
 
-    private static DefaultOAuth2AuthorizationRequestResolver getKoskiAuthorizationRequestResolver(ClientRegistrationRepository repository) {
+    private static DefaultOAuth2AuthorizationRequestResolver createKoskiAuthorizationRequestResolver(ClientRegistrationRepository repository) {
         var resolver =
                 new DefaultOAuth2AuthorizationRequestResolver(
                         repository,
@@ -64,7 +64,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    HttpSessionOAuth2AuthorizedClientRepository authorizedClientRepository() {
+    public HttpSessionOAuth2AuthorizedClientRepository authorizedClientRepository() {
         return new HttpSessionOAuth2AuthorizedClientRepository();
     }
 }
