@@ -1,6 +1,7 @@
 package fi.opetushallitus.koski.controller;
 
 import fi.opetushallitus.koski.config.KoskiConfig;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -15,11 +16,15 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClient;
 
+import java.io.IOException;
+
 import static org.springframework.security.oauth2.client.web.client.RequestAttributeClientRegistrationIdResolver.clientRegistrationId;
 
 @Slf4j
 @RestController("/")
 public class KoskiController {
+
+    private static final String HOME_URL = "/";
 
     private final RestClient restClient;
     private final OAuth2AuthorizedClientRepository authorizedClientRepository;
@@ -34,13 +39,14 @@ public class KoskiController {
         this.koskiConfig = koskiConfig;
     }
 
-    @GetMapping("/")
+    @GetMapping(HOME_URL)
     public String home(Authentication authentication, HttpServletRequest request) {
         var authorizedClient = getKoskiAuthorizedClient(authentication, request);
         if (authorizedClient == null) {
             return getUserNotAuthenticatedHtml();
         }
-        return getUserAuthenticatedHtml(authorizedClient.getAccessToken());
+        var data = request.getServletContext().getAttribute("data");
+        return getUserAuthenticatedHtml(authorizedClient.getAccessToken(), data == null ? null : data.toString());
     }
 
     private String getUserNotAuthenticatedHtml() {
@@ -52,21 +58,22 @@ public class KoskiController {
                 """.formatted(koskiConfig.getRegistrationId());
     }
 
-    private String getUserAuthenticatedHtml(OAuth2AccessToken accessToken) {
+    private String getUserAuthenticatedHtml(OAuth2AccessToken accessToken, String fetchedData) {
         return """
                 <center>
-                You are authenticated.<br/>
+                <h1><a href="/oauth2/logout/%s">Logout</a></h1>
+                <br/>You are authenticated.<br/>
                 <br/>Access token: %s
                 <br/>Issued at: %s
                 <br/>Expires at: %s
                 <br/>Scopes: %s
-                <br/><br/>
-                <h2><a href="/resource-server/fetch">Fetch data from resource server</a></h2>
-                <br/><h1><a href="/oauth2/logout/%s">Logout</a></h1>
+                <br/>
+                <br/>Retrieved data from resource server:
+                <br/><code>%s</code>
                 </center>
-                """.formatted(accessToken.getTokenValue(),
-                accessToken.getIssuedAt(), accessToken.getExpiresAt(), accessToken.getScopes(),
-                koskiConfig.getRegistrationId());
+                """.formatted(koskiConfig.getRegistrationId(),
+                accessToken.getTokenValue(), accessToken.getIssuedAt(), accessToken.getExpiresAt(),
+                accessToken.getScopes(), fetchedData == null ? "" : fetchedData);
     }
 
     private OAuth2AuthorizedClient getKoskiAuthorizedClient(Authentication authentication, HttpServletRequest request) {
@@ -74,45 +81,36 @@ public class KoskiController {
     }
 
     @GetMapping("/oauth2/logout/koski")
-    public String logoutGet(Authentication authentication, HttpServletRequest request, HttpServletResponse response) {
+    public void logoutGet(Authentication authentication, HttpServletRequest request, HttpServletResponse response) throws IOException {
         authorizedClientRepository.removeAuthorizedClient(koskiConfig.getRegistrationId(), authentication, request, response);
-        return """
-                <center>
-                <h1>Logged out</h1>
-                <br/>
-                <h2><a href="/">Home</a></h2>
-                </center>
-                """;
+        response.sendRedirect(HOME_URL);
     }
 
-    @GetMapping("/resource-server/fetch")
-    public String fetchData(Authentication authentication, HttpServletRequest request) {
-        var koski = getKoskiAuthorizedClient(authentication, request);
-        if (koski == null) {
-            return getUserNotAuthenticatedHtml();
+    @GetMapping("/api/openid-api-test/form-post-response-cb")
+    public void oAuth2DoneCallbackEndpoint(Authentication authentication,
+                                           HttpServletRequest request, HttpServletResponse response
+    ) throws IOException, ServletException {
+        // The OAuth2 authorization code flow is completed (either fail or success).
+        boolean validUser = true; // Check if the user is valid in the actual application.
+        var auth2AuthorizedClient = getKoskiAuthorizedClient(authentication, request);
+        if (auth2AuthorizedClient == null) {
+            response.sendRedirect(HOME_URL);
+            return;
         }
+        var servletContext = request.getServletContext();
+        servletContext.setAttribute("data", fetchDataFromResourceServer(auth2AuthorizedClient));
+        var dispatcher = servletContext.getRequestDispatcher(HOME_URL);
+        dispatcher.forward(request, response);
+    }
 
-        try {
-            var accessToken = koski.getAccessToken().getTokenValue();
-            return restClient.post()
-                    .uri(koskiConfig.getResourceServer())
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                    .attributes(clientRegistrationId(koskiConfig.getRegistrationId()))
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .body(String.class);
-
-        } catch (Exception e) {
-            log.error("Failed to fetch data from resource server", e);
-            return """
-                    <center>
-                    <h1>Failed to fetch data from resource server</h1>
-                    <br/>
-                    %s
-                    <br/>
-                    <h2><a href="/">Home</a></h2>
-                    </center>
-                    """.formatted(e.getMessage());
-        }
+    private String fetchDataFromResourceServer(OAuth2AuthorizedClient koski) {
+        var accessToken = koski.getAccessToken().getTokenValue();
+        return restClient.post()
+                .uri(koskiConfig.getResourceServer())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
+                .attributes(clientRegistrationId(koskiConfig.getRegistrationId()))
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .body(String.class);
     }
 }

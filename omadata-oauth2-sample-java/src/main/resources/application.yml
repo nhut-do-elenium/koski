@@ -22,7 +22,7 @@ spring:
             #scope: HENKILOTIEDOT_HETU,OPISKELUOIKEUDET_KAIKKI_TIEDOT
             scope: HENKILOTIEDOT_KAIKKI_TIEDOT,OPISKELUOIKEUDET_KAIKKI_TIEDOT
             client-name: koski
-            redirect-uri: "{baseUrl}/oauth2/code/{registrationId}"
+            redirect-uri: "{baseUrl}/api/openid-api-test/form-post-response-cb"
         provider:
           koski-tls:
             token-uri: https://localhost:7022/koski/api/omadata-oauth2/authorization-server

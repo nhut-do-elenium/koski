@@ -30,7 +30,9 @@ public class SecurityConfig {
                         "/",
                         "/error",
                         "/oauth2/**",
-                        "/oauth2/logout/koski")
+                        "/oauth2/logout/koski",
+                        "/api/openid-api-test/form-post-response-cb" //OAuth2 callback URL
+                )
                 .oauth2Client(
                         client -> {
                             client.authorizationCodeGrant(
