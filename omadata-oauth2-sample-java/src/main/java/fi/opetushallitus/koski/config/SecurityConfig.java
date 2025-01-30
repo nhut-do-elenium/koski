@@ -13,16 +13,16 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.client.RestClient;
 
+import static fi.opetushallitus.koski.config.KoskiConfig.RESTCLIENT_ID;
+
 @Configuration
 public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain oauthConfig(HttpSecurity http, ClientRegistrationRepository repository,
-                                           @Qualifier("koski") RestClient oauthRestClient,
-                                           HttpSessionOAuth2AuthorizedClientRepository authorizedClientRepository) throws Exception {
-
-        var responseClient = new RestClientAuthorizationCodeTokenResponseClient();
-        responseClient.setRestClient(oauthRestClient);
+                                           @Qualifier(RESTCLIENT_ID) RestClient oauthRestClient,
+                                           HttpSessionOAuth2AuthorizedClientRepository authorizedClientRepository
+    ) throws Exception {
 
         return http
                 .csrf().disable() // Disable CSRF for development purposes only. Don't do this in production!
@@ -36,11 +36,17 @@ public class SecurityConfig {
                             client.authorizationCodeGrant(
                                     code -> {
                                         code.authorizationRequestResolver(getKoskiAuthorizationRequestResolver(repository));
-                                        code.accessTokenResponseClient(responseClient);
+                                        code.accessTokenResponseClient(getRestClientAuthorizationCodeTokenResponseClient(oauthRestClient));
                                     });
                             client.authorizedClientRepository(authorizedClientRepository);
                         })
                 .build();
+    }
+
+    private static RestClientAuthorizationCodeTokenResponseClient getRestClientAuthorizationCodeTokenResponseClient(RestClient oauthRestClient) {
+        var responseClient = new RestClientAuthorizationCodeTokenResponseClient();
+        responseClient.setRestClient(oauthRestClient);
+        return responseClient;
     }
 
     private static DefaultOAuth2AuthorizationRequestResolver getKoskiAuthorizationRequestResolver(ClientRegistrationRepository repository) {
